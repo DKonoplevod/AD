@@ -1,0 +1,298 @@
+---
+title: "**Практическая работа 1**"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r part 1, include=FALSE}
+trees #opening data set Trees
+View(trees) #data set Trees as table
+mytrees<-as.data.frame(trees) #frame criation
+summary(mytrees)
+cor(mytrees)
+cormtrx<-cor(mytrees)
+cormtrx
+# Descriptive statistics in package "Pastecs"
+library("pastecs")
+stat.desc(mytrees)
+#Statistic Hipotheses - tests
+#t-test: significance of mean Girth
+t.test(mytrees$Girth,mu=mean(mytrees$Girth))
+#wilcoxon-test: significance of median Volume
+wilcox.test(mytrees$Volume,mu=median(mytrees$Volume),conf.int=TRUE)
+# Shapiro normal distribution test
+shapiro.test(mytrees$Girth)
+# Kolmogorov-Smirnov's normal distribution test
+ks.test(mytrees$Girth,"pnorm")
+```
+
+
+## **Задание 1.1**
+
+### Проверка значимости среднего
+
+Проверим гипотезу о равенстве математического ожидания переменной Height, т.е. истинного, выборочному среднему. Для этого воспользуемся одномерным t-тестом Стьюдента.
+
+```{r}
+t.test(mytrees$Height, mu=mean(mytrees$Height))
+```
+Статистика Стьюдента для выборки t=0 с числом степеней свободы df=30 и p-значением, равным 1, которое заведомо больше вероятности α=0,05, означают, что гипотеза о среднем принимается.
+
+95%-й доверительный интервал для среднего - (73.6628 78.3372).
+
+Проверить гипотезу также можно с помощью рангового теста Уилкоксона относительно значимости медианы:
+```{r}
+wilcox.test(mytrees$Volume, mu=median(mytrees$Volume), conf.int=TRUE)
+```
+
+### Проверка гипотезы нормальности
+
+**Гипотеза**: анализируемая выборка происходит из генеральной совокупности, имеющей нормальное распределение. 
+Для проверки гипотезы воспользуемся формальными критериями согласия:
+
+1.  Тест Шапиро-Уилкса
+```{r}
+shapiro.test(mytrees$Height)
+```
+Вероятность p-value = 0.4034 > 0.05. Следовательно, гипотеза принята.
+
+2. Тест Колмогорова-Смирнова
+```{r}
+ks.test(mytrees$Height,"pnorm")
+```
+Низкая вероятность p-value < 2.2e-16 означает отклонение гипотезы в пользу альтернативной, т.е. распределение выборки не соответствует нормальному.
+Однако, считается, что этот критерий согласия является недостаточно мощным для малых и средних объемов выборок.
+
+```{r part 2, include=FALSE}
+# for variable Volume
+shapiro.test(mytrees$Volume)
+ks.test(mytrees$Vol,"pnorm")
+# graphical normal distribution tests
+dev.new()# new graphical window
+qqnorm(mytrees$Girth, main="Girth")
+qqline(mytrees$Girth, col=2)
+dev.cur()# current graphical window
+qqnorm(mytrees$Volume, main="Volume")
+qqline(mytrees$Volume, col=2)
+library(sm)
+sm.density(mytrees$Girth, model = "Normal", xlab="Girth",
+           ylab="Distribution density")
+sm.density(mytrees$Height, model = "Normal", xlab="Height",
+           ylab="Distribution density")
+sm.density(mytrees$Volume, model = "Normal", xlab="Volume",
+           ylab="Distribution density")
+#****************************************************************** 
+#GRAPHICAL TOOLS
+# a scatter plot, the default output
+plot(mytrees$Girth)
+dev.new()
+plot(mytrees$Girth,xlab = "Cases",ylab = "Girth")
+# Histograms
+# histogram by Girth variable in absolute frequencies
+hist(mytrees$Girth)
+# histogram by Girth variable in relative frequencies
+hist(mytrees$Girth,freq=FALSE)
+hist(mytrees$Girth, breaks = 6,freq=FALSE,col="lightblue",
+     xlab ="Cases",ylab = "Girth",
+     main="Histogram by Girth")
+# with the density approximation
+lines(density(mytrees$Girth),col="red", lwd=2)
+```
+
+## **Задание 1.2**
+
+### Гистограммы по переменной Height
+Построим гистограмму абсолютных частот для переменной Height.
+```{r}
+# histogram by Height variable in absolute frequencies
+hist(mytrees$Height)
+```
+
+Построим гистограмму относительных частот для переменной Height и добавим аппроксимацию кривой плотности вероятности.
+```{r}
+hist(mytrees$Height, breaks = 6,freq=FALSE,col="lightblue",
+     xlab ="Cases",ylab = "Height",
+     main="Histogram by Height")
+
+lines(density(mytrees$Height),col="red", lwd=2)
+```
+
+### Гистограммы по переменной Volume
+
+Построим гистограмму абсолютных частот для переменной Volume
+```{r}
+hist(mytrees$Volume)
+```
+
+Построим гистограмму относительных частот для переменной Volume и добавим аппроксимацию кривой плотности вероятности.
+```{r}
+hist(mytrees$Volume, breaks = 6,freq=FALSE,col="lightblue",
+     xlab ="Cases",ylab = "Volume",
+     main="Histogram by Volume")
+
+lines(density(mytrees$Volume),col="red", lwd=2)
+```
+
+```{r part 3, include=FALSE}
+# Box&Whisker plots
+boxplot(mytrees$Girth, mytrees$Height,mytrees$Volume,main = "Box&Whisker Plot",xlab="Girth
+Height Volume")
+boxplot.stats(mytrees$Girth, coef = 1.5, do.conf = TRUE, do.out = TRUE)
+boxplot.stats(mytrees$Volume, coef = 1.5, do.conf = TRUE, do.out = TRUE)
+```
+
+## **Задание 1.3**
+
+Отобразим диапазон изменения переменных данных на диаграмме, добавив еще несколько параметров:
+
+- Для того, чтобы различить переменные выделим их одним из цветов RGB
+- Развернем диаграмму горизонтально
+- Добавим подписи для осей
+- Увеличим и незначительно изменим цвет линий на диаграмме
+- Изменим также отображение выбросов
+
+```{r}
+boxplot(mytrees,
+        col = rainbow(ncol(trees)),
+        main = "Plot with parameters",
+        horizontal = TRUE,
+        lwd = 2,
+        xlab = "Cases",
+        ylab = "Variables",
+        notch = TRUE,
+        border = "black",
+        outpch = 21,
+        outbg = rainbow(ncol(trees)),
+        whiskcol = "gray",
+        whisklty = 2, 
+        lty = 1
+      )
+```
+
+
+```{r part 4, include=FALSE}
+#Scatterplot
+plot(mytrees$Height,mytrees$Girth,type="p",col="red",cex=1,
+     xlab = "Height",
+     ylab = "Girth",
+     main = "Height vs Girth")
+plot(mytrees$Girth,mytrees$Volume,type="p",col="red",cex=1,
+     xlab = "Girth",
+     ylab = "Volume",
+     main = "Girth vs Volume")
+# regression line
+abline(lm(mytrees$Volume~mytrees$Girth),col="blue",lwd=1)
+# matrix diagram
+pairs(mytrees[1:3], main = "Matrix Diagram")
+# histograms on the diagonal
+x<-cbind(mytrees$Girth,mytrees$Height,mytrees$Volume)
+pairs(x, gap=0,
+      diag.panel= function(x)
+      {par(new = TRUE)
+        hist(x, col = "light pink",probability = TRUE)
+        lines(density(x),col = "red",lwd = 2)
+      }
+)
+```
+
+## **Задание 1.4**
+
+Получим данные stackloss и создадим фрейм.
+
+```{r}
+stackloss
+data1 <- as.data.frame(stackloss)
+```
+
+### Получение описательной статистики
+
+Вычислим минимальный набор описательной статистики полученных данных.
+
+```{r}
+summary(data1)
+```
+
+Так как пакет pastecs уже установлен в первой части работы мы можем получить расширенный набор описательнй статистики с помощью функции stat.desc:
+```{r}
+stat.desc(data1)
+```
+
+### Проверка гипотез нормальности
+
+Проверим гипотезы нормальности переменных.Для этого реализуем функцию tests_for_variable, которая будет делать все 4 необходимые проверки переменной.
+
+```{r}
+tests_for_variable <- function(variable) {
+  print(t.test(variable, mu=mean(variable)))
+  print(wilcox.test(variable, mu=median(variable), conf.int=TRUE))
+  print(shapiro.test(variable))
+  print(ks.test(variable, "pnorm"))
+}
+```
+
+```{r}
+tests_for_variable(data1$Air.Flow)
+tests_for_variable(data1$Water.Temp)
+tests_for_variable(data1$Acid.Conc.)
+tests_for_variable(data1$stack.loss)
+```
+
+**Выводы**: 
+
+  1. Гипотеза о среднем принимается по всем 4 переменным, согласно одномерного t-теста Стьюдента и рангового теста Уилкоксона.
+  2. По всем 4 переменным вероятность p-value, полученная с помоью с помощью теста Шапиро-Уилкса < 0.05. Следовательно, гипотеза о нормальности распределения не принимается. По всем переменным в тесте Колмогорова-Смирнова p-value < 2.2e-16, что означает отклонение гипотезы в пользу альтернативной: «распределение выборки не соответствует нормальному». Однако считается, что этот критерий согласия является недостаточно мощным для малых и средних объемов выборок.
+
+### Визуализация данных
+
+Определим функцию построения необходимых диаграмм  для анализа переменных - diagrams_for_variable.
+
+```{r}
+diagrams_for_variable <- function(variable, name) {
+  layout(matrix(c(1,1,1,2), nrow = 1, ncol = 4, byrow = TRUE))
+
+  hist(variable, freq=FALSE, xlab = name, ylab = "Cases", col = "grey", main = name)
+  lines(density(variable), col = "red", lwd = 2)
+
+  boxplot(variable, horizontal = FALSE,
+        lwd = 2, col = rgb(0, 1, 1, alpha = 0.15))
+}
+```
+
+Построим диаграммы для каждой из переменной данных, используя только что определенную функцию.
+
+```{r}
+diagrams_for_variable(data1$Air.Flow, "Air.Flow")
+diagrams_for_variable(data1$Water.Temp, "Water.Temp")
+diagrams_for_variable(data1$Acid.Conc., "Acid.Conc.")
+diagrams_for_variable(data1$stack.loss, "stack.loss")
+
+```
+
+Построим матричную диаграмму зависимости перменных друг от друга.
+При этом ниже диагонали покажем корреляцию переменных, а выше диагонали - графики зависимости переменных.
+
+```{r}
+pairs(
+  data1[1:4], 
+  main = "Matrix Diagram", 
+  panel = function(x, y) {
+    points(x, y)
+    abline(lm(y~x), col = 'red')
+  }, 
+  lower.panel = function(x, y) {
+    par(usr = c(0, 1, 0, 1))
+    text(0.5, 0.5, paste0("", round(cor(x, y), digits=2)), cex = 1.5)
+  }
+)
+
+```
+
+**Вывод**: Как видно из полученных значений в матрице, переменные Air.Flow и Water.Temp почти линейно связаны с переменной stack.loss.

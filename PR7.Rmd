@@ -1,0 +1,60 @@
+---
+title: "Практическая работа 7"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+## Задание 7.1
+
+```{r}
+jr<-data.frame(USJudgeRatings)
+dis.jr<-dist(jr)# distance matrix
+loc <- cmdscale(dis.jr,k=2)
+loc
+px <- loc[, 1]
+py <- loc[, 2]
+plot(px, py,type = "n", xlab = "", ylab = "", asp = 1, axes = FALSE,
+ main = "cmdscale(jr)")
+text(px, py, rownames(loc), cex = 0.6)
+```
+
+Теперь создадим матрицу дистанций на основе корреляционной матрицы и сравним полученные результаты.
+
+```{r}
+## correlations "as distance"
+dd.jr <- as.dist((1 - cor(jr))/2)
+round(1000 * dd.jr) # (prints more nicely)
+loc1 <- cmdscale(dd.jr,k=2)
+loc1
+px1 <- loc1[, 1]
+py1 <- loc1[, 2]
+plot(px1, py1,type = "n", xlab = "", ylab = "", asp = 1, axes = FALSE,
+ main = "cmdscale(jr)")
+text(px1, py1, rownames(loc), cex = 0.6)
+```
+
+При использовании корреляционной матрицы для создания матрицы дистанций у данных появляется кластерная структура, а удаленных объектов почти не остается.
+
+## Задание 7.2
+
+Исходные данные - eurodist.
+В данных описано расстояние между различными городами Европы.
+
+```{r}
+loc <- cmdscale(eurodist)
+x <- loc[, 1]
+y <- -loc[, 2] # reflect so North is at the top
+## note asp = 1, to ensure Euclidean distances are represented correctly
+plot(x, y, type = "n", xlab = "", ylab = "", asp = 1, axes = FALSE,
+ main = "cmdscale(eurodist)")
+text(x, y, rownames(loc), cex = 0.6)
+```
+
+Анализируя матрицу, предложенны в скипте алгоритм стремится расположить точки с координатами городов в двумерном пространстве (на плоскости), максимально сохранив реальные расстояния между ними. 
+
+Таким образом, полученное размещение точек на плоскости впоследствии можно использовать в качестве приближенной географической карты городов Европы.

@@ -1,0 +1,331 @@
+---
+title: "**Практическая работа 2**"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r, include=FALSE}
+attitude # data set opening
+myatt<-as.data.frame(attitude) #frame creation
+View(myatt)
+summary.data.frame(myatt) # descriptive statistics
+cor(myatt) # correlation matrix
+#package "pastecs"
+library("pastecs")
+stat.desc(myatt)
+# matrix diagram
+dev.new()
+x<-myatt
+pairs(x, gap=0,
+ diag.panel= function(x)
+ {par(new = TRUE)
+ hist(x, col = "light blue",probability = TRUE)
+ lines(density(x),col = "red",lwd = 2)
+ })
+# scatterplot & regression line
+dev.new()
+plot(rating~complaints, data = myatt)
+abline(lm(rating~complaints, data = myatt),col="blue",lwd=1)
+dev.new()
+plot(rating~advance, data = myatt)
+abline(lm(rating~advance, data = myatt),col="blue",lwd=1)
+# *********pair regression 1 (rating~complaints)************
+lm.rat1<-lm(formula=rating~complaints,data=myatt)
+lm.rat1$coefficients
+summary(lm.rat1)
+# CI & PI Confidence Interval & Predicted Interval
+CPI.df <- cbind(predict(lm.rat1,interval ="conf"),
+ predict(lm.rat1,interval ="pred"))
+CPI.df <- CPI.df[,-4] ;
+colnames(CPI.df) <- c("Y_fit","CI_l","CI_u","PI_l","PI_u")
+head(CPI.df)
+#Analysis of Variance Table
+anova(lm.rat1)
+#regression 1 line with CI&PI
+dev.new()
+matplot(myatt$complaints, CPI.df,
+  type="l", lwd=c(2,1,1,1,1), col=c(1,2,2,4,4),
+  ylab="rating", xlab="complaints")
+with(myatt, matpoints(complaints, rating, pch=20))
+# ********pair regression 2 (rating~advance)***************
+lm.rat2<-lm(formula=rating~advance, data=myatt)
+lm.rat2$coefficients
+summary(lm.rat2)
+#Analysis of Variance Table
+anova(lm.rat2)
+# CI & PI Confidence Interval & Predicted Interval
+CPI.df <- cbind(predict(lm.rat2, interval ="conf"),
+ predict(lm.rat2, interval ="pred"))
+CPI.df <- CPI.df[,-4] ;
+colnames(CPI.df) <- c("Y_fit","CI_l","CI_u","PI_l","PI_u")
+head(CPI.df)
+#regression 2 line with CI&PI
+dev.new()
+matplot(myatt$advance, CPI.df,
+ type="l", lwd=c(2,1,1,1,1), col=c(1,2,2,4,4),
+ ylab="rating", xlab="advance")
+with(myatt, matpoints(raises, rating, pch=20))
+
+```
+
+
+## Задание 2.1
+
+Получим модель парной линейной регрессии rating от learning.
+```{r}
+lm.rat2<-lm(formula=rating~learning, data=myatt)
+lm.rat2$coefficients
+```
+
+Уравнение парной линейной регрессии 2:
+
+rating = 28.1741191 + 0.6468223 * learning
+
+```{r}
+summary(lm.rat2)
+```
+
+Аероятность F-отношения 0.0002311 < 0,05. Следовательно, регрессию можно считать значимой.
+
+Подтвердим данный вывод с помощьюю таблицы дисперсионного анализа.
+
+```{r}
+anova(lm.rat2)
+```
+
+Вычислим доверительные интервалы CI (Confidence Interval) и PI (Predicted Interval).
+
+```{r}
+CPI.df <- cbind(predict(lm.rat2, interval ="conf"), predict(lm.rat2, interval ="pred"))
+CPI.df <- CPI.df[,-4] ;
+colnames(CPI.df) <- c("Y_fit","CI_l","CI_u","PI_l","PI_u")
+head(CPI.df)
+```
+
+Теперь покажем полученные интервалы на графие и построим линию регрессии.
+
+```{r}
+matplot(myatt$learning, CPI.df,
+  type="l", lwd=c(2,1,1,1,1), col=c(1,2,2,4,4),
+  ylab="rating", xlab="learning")
+with(myatt, matpoints(raises, rating, pch=20))
+```
+
+```{r, include=FALSE}
+#*************multiply linear regression (rating~.)***********
+summary(fm1 <- lm(rating ~ ., data = myatt))
+table1 <- anova(fm1)
+#************* regression by step*************************
+summary(fm2 <- step(lm(rating ~ ., data = myatt)))
+table2 <-anova(fm2)
+```
+
+
+## Задание 2.2
+
+Сравним значение полученные в итоговой статистике по моделям регресиии 3 и 4.
+
+```{r}
+library(knitr)
+kable(table1)
+kable(table2)
+```
+
+Различия в полученных значения связаны с тем, что в пошаговой множественной регрессии менее значимые переменные исключаются  по оценке их вклада в объяснение вариации.
+
+Таким образом, из-за исключения других переменных в итоговой статистике регрессии 4:
+
+1. Количество степеней свободы у остатков увеличилось на количество исключенных переменных, а значимость отстатков при этом уменьшилась
+2. Значимость переменной complaints не изменилась, при этом вероятность F-отношений стала практически равна 0
+3. Значимость переменной learning уменьшилась, при этом вероятность F-отношений стала больше примерно на 0.017
+
+## Задание 2.3
+
+Проведем корреляционно-регрессионный анализ данных stackloss. Для этого проведем предварительную обработку данных.
+
+### Предварительная обработка
+
+Получим данные stackloss.
+
+```{r}
+stackloss
+data1<-as.data.frame(stackloss)
+```
+
+Выведем минмиальный набор описательной статистики.
+
+```{r}
+summary.data.frame(data1)
+```
+
+Выведем расширенный набор описательной статистики с помощью пакета pastecs.
+
+```{r}
+stat.desc(data1)
+```
+
+Выведем корреляционную матрицу. Анализ данной матрицы уже был произведен в ПР 1.
+
+```{r}
+cor(data1)
+```
+
+Возьмем также матричную диаграмму, построенную в предыдущей работе.
+
+```{r}
+pairs(
+  data1[1:4], 
+  main = "Matrix Diagram", 
+  panel = function(x, y) {
+    points(x, y)
+    abline(lm(y~x), col = 'red')
+  }, 
+  lower.panel = function(x, y) {
+    par(usr = c(0, 1, 0, 1))
+    text(0.5, 0.5, paste0("", round(cor(x, y), digits=2)), cex = 1.5)
+  }
+)
+```
+
+Максимальным коэффициентом корреляции является 0.92, минимальным - 0.39.
+
+### 1. Парная линейная модель
+
+Определим функцию pair_linear_model, которая будет:
+
+1. Получать оценки параметров регресии
+2. Составлять уравнение парной линейной регрессии
+3. Получать итоговую статистику по модели регрессии
+4. Строить таблицу дисперсионного анализа с помощью функции anova
+5. Вычислять доверительные интервалы
+6. Строить доверительные интервалы и линии регрессии
+
+```{r}
+pair_linear_model <- function(model_data, variable1, variable2) {
+  cat("Парная линейная модель ", variable1, "~", variable2)
+  print(lm.rat1<-lm(formula=model_data[[variable1]]~model_data[[variable2]],data=model_data))
+  coefs <- lm.rat1$coefficients
+  print(coefs)
+  cat("Уравнение парной линейной регрессии: \n")
+  cat(variable1, " = ", coefs[1], " + ", coefs[2],  " * ", variable2, "\n")
+  print(summary(lm.rat1))
+  print(anova(lm.rat1))
+  CPI.df <- cbind(
+      predict(lm.rat1,interval ="conf"),
+      predict(lm.rat1,interval ="pred")
+    )
+  CPI.df <- CPI.df[,-4] ;
+  colnames(CPI.df) <- c("Y_fit","CI_l","CI_u","PI_l","PI_u")
+  print(head(CPI.df))
+  matplot(
+    model_data[[variable2]], CPI.df,
+    type="l", lwd=c(2,1,1,1,1), col=c(1,2,2,4,4),
+    ylab=variable1, xlab=variable2
+  )
+  with(
+    model_data,
+    matpoints(
+      model_data[[variable2]],
+      model_data[[variable1]],
+      pch=20
+    )
+  )
+}
+```
+
+Теперь получим модель регрессии переменной stack.loss по всем возможным предикторам.
+
+```{r}
+pair_linear_model(data1, "stack.loss", "Air.Flow")
+pair_linear_model(data1, "stack.loss", "Water.Temp")
+pair_linear_model(data1, "stack.loss", "Acid.Conc.")
+```
+
+
+### Вывод
+
+Исходя из вероятности F-отношения, которая составляет 3.774e-09 для переменной Air.Flow и 2.028e-07 для переменной Water.Temp, можно сделать вывод о значимости этих моделей парной регрессии.
+
+Высокая вероятность F-отношения для переменной Acid.Conc. (0.07252>0,05) не позволяет считать регрессию для переменных stack.loss и Acid.Conc. значимой. Это подтверждает и таблица дисперсионного анализа.
+
+### 2. Множественная линейная модель
+
+Получим модель множественной линейной регрессии и выведем итоговую статистику по ней.
+
+```{r}
+summary(fm1 <- lm(stack.loss ~ ., data = data1))
+```
+
+Из полученных оценкок можно составить саму модель:
+stack.loss = -39.9197 + Air.Flow * 0.7156 + Water.Temp * 1.2953 + Acid.Conc. * -0.1521 
+
+Наиболее значимыми являются коэффициенты регрегрессии при переменных:
+
+- Air.Flow (***)
+- Water.Temp (**)
+
+Модель в целом также статистически значима в соответствии с вероятностью F-отношения (p-value: 3.016e-09)
+
+Теперь выполним анализ сумм квадратов.
+
+```{r}
+anova(fm1)
+```
+
+Выведем таблицу наблюдаемых и предсказанных значений переменной rating. Для этого создадим вспомогательную таблицу tabout.
+
+```{r}
+tabout<-cbind(data1$stack.loss, predict.lm(fm1))
+head(tabout, n=30)
+```
+
+Построим диаграмму квантиль-квантиль для того, чтобы показать соответствие наблюдаемых и предсказанных значений.
+
+```{r}
+qqplot(data1$stack.loss, predict.lm(fm1), main="QQ-plot")
+```
+
+### 3. Пошаговая множественная регрессия
+
+Получим модель множественной линейной регрессии и выведем итоговую статистику по ней.
+
+```{r}
+summary(fm2 <- step(lm(stack.loss ~ ., data = data1)))
+```
+
+Из полученных оценкок можно составить саму модель:
+stack.loss = -50.3588 + Air.Flow * 0.6712 + Water.Temp * 1.2954
+
+Наиболее значимыми являются коэффициенты регрегрессии при переменных:
+
+- Air.Flow (***)
+- Water.Temp (**)
+
+Модель в целом также статистически значима в соответствии с вероятностью F-отношения (p-value: 4.382e-10)
+
+Теперь выполним анализ сумм квадратов.
+
+```{r}
+anova(fm2)
+```
+
+Выведем таблицу наблюдаемых и предсказанных значений переменной rating. Для этого создадим вспомогательную таблицу tabout2.
+
+```{r}
+tabout2<-cbind(data1$stack.loss, predict.lm(fm2))
+head(tabout2, n=30)
+```
+
+Построим диаграмму квантиль-квантиль для того, чтобы показать соответствие наблюдаемых и предсказанных значений.
+
+```{r}
+qqplot(data1$stack.loss, predict.lm(fm2), main="QQ-plot")
+```

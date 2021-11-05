@@ -1,0 +1,136 @@
+---
+title: "**Практическая работа 4**"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+library("CCP")
+```
+
+В данной работе будут использоваться данные LifeCycleSavings. Таблица данных содержит данные по 50 странам и 5 числовым переменным:
+
+- [,1]	sr	совокупные личные сбережения
+- [,2]	pop15	% населения до 15 лет
+- [,3]	pop75	% населения старше 75 лет
+- [,4]	dpi	реальный располагаемый доход на душу населения
+- [,5]	ddpi	% прирост dpi
+
+```{r}
+print(LifeCycleSavings)
+```
+
+Проведем предварительный анализ для созданной копии набора данных lcs , включающего все переменные.
+Для этого выведем описательную статистику набора, а также корреляционную матрицу.
+
+```{r}
+lcs<-data.frame(LifeCycleSavings)
+summary(lcs)
+cor(lcs)
+```
+
+Теперь разделим переменные на два мноества путем преобразования таблицы данных в матрицы с нужными столбцами.
+
+По смыслу переменных, множество X объединяет зависимые переменные, а множество Y – независимые. Такое разделение
+будет играть роль при проверке значимости канонических корреляций.
+
+Таким образом в множество X отнесем переменные pop15, pop75, а все остальные (sr, ddpi, dpi) отнесем в множетсво Y.
+
+```{r}
+# Set X (depended variables)
+x<-as.matrix(LifeCycleSavings[2:3])
+x
+```
+
+```{r}
+# Set Y (independed variables)
+y<-as.matrix(LifeCycleSavings[4:5])
+y<-cbind(as.matrix(LifeCycleSavings[1]),y)
+y
+```
+
+Для полученных множеств рассмотрим корреляционные матрицы.
+
+```{r}
+# Set X Statistics
+summary(x)
+cx<-cor(x)
+cx
+# Set Y Statistics
+summary(y)
+cy<-cor(y)
+cy
+```
+
+Канонические корни выведены в порядке убывания. Максимальный коэффициент корреляции 0.8247966 говорит о связи переменных двух множеств, выраженную через связь канонических переменных.
+
+Выполним канонический анализ с помощью функции cancor().
+
+```{r}
+# Canonicfl Correlations
+cxy<-cancor(x, y)
+cxy
+
+```
+
+С помохью функции summary(cxy) получим описание объектов, созданных функцией cancor().
+
+```{r}
+summary(cxy)
+```
+
+Выполним проверку значимости канонических корреляций при помощи функций из пакета CCP(Significance Tests for Canonical Correlation Analysis):
+
+- p.asym() (асимптотический тест статистической значимости канонических корреляций)
+- p.perm() (перестановочный тест)
+
+Они вычисляют F-аппроксимации тестов Уилкса, Хотеллинга, Пилаи, Роя и вероятности p(>F).
+
+Вычислим размерности матриц
+
+```{r}
+# Statistic Significance
+N = dim(x)[1] # number of observations
+p = dim(x)[2] # number of dependent variables
+q = dim(y)[2] # number of independent variable
+```
+
+Запишем полученные ранее канонические корни в переменную rho.
+
+```{r}
+rho <- cxy$cor
+```
+
+
+Теперь проведем сами тесты. Для каждого из тестов построим также график F-аппроксимации
+
+```{r}
+p.asym.out<-p.asym(rho, N, p, q, tstat = "Wilks")
+plt.asym(p.asym.out, rhostart = 1)
+
+p.asym.out<-p.asym(rho, N, p, q, tstat = "Hotelling")
+plt.asym(p.asym.out, rhostart = 1)
+
+p.asym.out<-p.asym(rho, N, p, q, tstat = "Pillai")
+plt.asym(p.asym.out, rhostart = 1)
+
+p.asym.out<-p.asym(rho, N, p, q, tstat = "Roy")
+plt.asym(p.asym.out, rhostart = 1)
+```
+
+В колонке p.value приведены вероятности F-аппроксимации для всех канонических переменных, затем без 1-й переменной и т. д. Стоит отметить более низкую значимость для моделей со 2 переменной.
+
+Проведем также перестановочные тесты с помощью функции  p.perm(), меняя число включаемых канонических переменных, а также построим диаграмму плотности.
+
+```{r}
+p.perm(x, y, nboot = 999, rhostart = 1)
+p.perm(x, y, nboot = 999, rhostart = 2)
+out <- p.perm(x, y, nboot = 999, rhostart = 1, type = "Hotelling")
+plt.perm(out)
+```
+
