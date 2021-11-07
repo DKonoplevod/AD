@@ -1,0 +1,161 @@
+---
+title: "Отчет о выполнении индивидуального задания по курсу «Анализ данных»"
+output: html_document
+---
+
+#### Выполнил: Королёв Данил Алексеевич
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+library(carData)
+library(dplyr)
+library(ggplot2)
+library(pastecs)
+```
+
+В качестве исходных данных возьмем данные о зарплатах профессоров и их ассистентов в колледжах Америки за 2008-2009 года.
+
+Для этого запишем данные Salaries из пакета carData и выведем их часть.
+
+```{r}
+data <- Salaries
+head(data)
+```
+
+Описание переменных:
+
+- rank a factor with levels AssocProf AsstProf Prof
+- discipline a factor with levels A (“theoretical” departments) or B (“applied” departments).
+- yrs.since.phd years since PhD.
+- yrs.service years of service.
+- sex a factor with levels Female Male
+- salary nine-month salary, in dollars.
+
+Выведем описательную статистику полученных данных.
+
+```{r}
+summary(data)
+```
+
+Выведем больший объем описательной статистики с помощью пакета pastecs.
+
+```{r}
+stat.desc(data)
+```
+
+
+## 1. Зависимость зарплат от пола сотрудника
+
+Для анализа зависимости воспользуемся моделью парной линейной регрессии.
+
+```{r}
+model_sex <- lm(salary ~ sex, data = data)
+summary(model_sex)$coef
+```
+
+Построим диаграмму whisker и покажем различия зарплат.
+
+```{r}
+boxplot(salary~sex,data=data, main="Salary across gender",
+        xlab="Sex", ylab="Salary")
+```
+
+Полученные результаты показывают что средняя зарпата для женщин равна 101002 долларам, в то время как для мужчин средняя зарплата выше в среднем на 14088 долларов и составляет 115090 долларов.
+
+Также можно сделать вывод о значимости полученной модели, так как p-value < 0.05
+
+## 2. Зависимость зарплаты от должности и преподаваемой дисциплины
+
+Для анализа зависимости также будем использовать модель линейной регрессии.
+
+Построим whisker диаграмму для зависимости зарплаты от должности сотрудника.
+
+```{r}
+ggplot(data) + geom_boxplot(aes(x=rank, y=salary))
+```
+
+Построим whisker диаграмму для зависимости зарплаты от преподаваемой дисциплины. 
+
+```{r}
+ggplot(data) + geom_boxplot(aes(x=discipline, y=salary))
+```
+
+Теперь покажем зависимость зарплаты от обеих переменных на диаграмме.
+Цветом выделим преподоваемую дисципину.
+
+```{r}
+salary_discipline_rank <-  data %>% ggplot() +
+  geom_jitter(aes(rank,salary, colour=discipline)) + 
+  geom_smooth(aes(rank,salary, colour=discipline), method=lm, se=FALSE) +
+  labs(x = "Rank", y = "Nine-Month Salary (in Dollars)",
+       title = "Nine-Month Salary vs. Discipline")
+salary_discipline_rank
+```
+
+Как видно из диграммы выше зарплата для Prof значительно выше, чем у AssocProf и AsstProf.
+
+Также стоит отметить, что для любых должностей зрплата у преподователй прикладных дисциплин в среднем выше, чем у преподователей теоретических дисциплин.
+
+## 3. Зависимость зарплаты от всех параметров данных
+
+Для анализа зависимости создадим модель множественной линейно регресии.
+
+Сначала выведем корреляционную матрицу для выбранных численных переменных.
+
+```{r}
+cor(data[,c("yrs.since.phd", "yrs.service", "salary")])
+```
+
+Как видно из полученной матрицы, количество лет с момента получения ученой степени тесно связано с опытом работы - 0.9096491.
+
+Связь остальных переменных с зарплатой не такая явная.
+
+Покажем полученную зависимость на диаграмме.
+
+Для этого построим матричную диаграмму зависимости перменных друг от друга.
+При этом ниже диагонали покажем корреляцию переменных, а выше диагонали - графики зависимости переменных.
+
+```{r}
+pairs(
+  data[,c("yrs.since.phd", "yrs.service", "salary")], 
+  main = "Matrix Diagram", 
+  panel = function(x, y) {
+    points(x, y)
+    abline(lm(y~x), col = 'red')
+  }, 
+  lower.panel = function(x, y) {
+    par(usr = c(0, 1, 0, 1))
+    text(0.5, 0.5, paste0("", round(cor(x, y), digits=2)), cex = 1.5)
+  }
+)
+```
+
+```{r}
+mod1 <- lm(salary ~ yrs.since.phd + yrs.service + rank + discipline + sex, data = data)
+summary(mod1)
+```
+
+Полученную модель можно считать значимой, так как p-value < 0.05.
+
+Выполним анализ сумм квадратов полученной модели с помощью функции anova.
+
+```{r}
+anova(mod1)
+```
+
+В результате анализа можно сделать следующий вывод:
+
+- Наиболее значимыми для уровня зарплаты являются должность (rank), преподаваемая дисциплина (discipline) и количество лет с момента получения ученой степени (yrs.since.phd).
+- Опыт работы также является значимым опыт работы (yrs.service), но с меньшей значимостью - Pr(>F) = 0.002866
+- Пол сотрудника не является значимым для зарплаты - Pr(>F) = 0.215841
+
+Выведем диаграмму предсказанных значений переменной salary.
+
+```{r}
+qqplot(data$salary, predict.lm(mod1),main="QQ-plot")
+```
+
+
